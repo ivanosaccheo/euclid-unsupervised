@@ -40,7 +40,7 @@ with open(os.path.join(save_directory, filename + ".json"), "w") as f:
 
 
 df, features = lu.load_data(file_path="/scratch/extra/ELSA/ivano.saccheo2/DR1/EDFN_teresa_parquet")
-
+df = df.with_columns([pl.when(pl.col(c).is_finite()).then(pl.col(c)).otherwise(float("nan")) for c in features_to_use])
 
 if config["FILL_NAN_VALUES"]:
     df = df.fill_nan(None).with_columns([pl.col(c).fill_null(pl.col(c).mean()) for c in features_to_use])
