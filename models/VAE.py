@@ -13,7 +13,7 @@ from ml import models_library, training
 
 filename = f"VAE"
 
-with open("euclid-unsupervised/exploration/output/ranked_features_multilabel.dat", "r") as f:
+with open("exploration/output/ranked_features_multilabel.dat", "r") as f:
     features_to_use = [line.strip() for line in f]
 
 
@@ -29,7 +29,10 @@ config = {
     "features_to_use" : features_to_use,
 }
 
-save_directory = os.path.join("models", "saved_models")
+
+base_dir = os.path.dirname(os.path.abspath(__file__))
+save_directory = os.path.join(base_dir, "saved_models")
+os.makedirs(save_directory, exist_ok=True)
 today = datetime.datetime.now().strftime("%Y-%m-%d")
 filename = filename + "_" + today
 with open(os.path.join(save_directory, filename + ".json"), "w") as f:

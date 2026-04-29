@@ -30,7 +30,7 @@ def train_routine(dataloader, model, loss_fn, optimizer, beta = 1,
     kl_loss_epoch /= num_batches
 
     if verbose:
-        print(f"Train: tot_loss = {tot_loss_epoch:>7f} -- MSE = {mse_loss_epoch:>7f} -- KL = {kl_loss_epoch:>7f}")
+        print(f"Train: tot_loss = {tot_loss_epoch:>7f} -- MSE = {mse_loss_epoch:>7f} -- KL = {kl_loss_epoch:>7f}", flush = True)
 
     return tot_loss_epoch, mse_loss_epoch, kl_loss_epoch 
 
@@ -62,7 +62,7 @@ def validation_routine(dataloader, model, loss_fn, beta=1,
     kl_loss_epoch /= num_batches
 
     if verbose:
-        print(f"Validation: tot_loss = {tot_loss_epoch:>7f} -- MSE = {mse_loss_epoch:>7f} -- KL = {kl_loss_epoch:>7f}")
+        print(f"Validation: tot_loss = {tot_loss_epoch:>7f} -- MSE = {mse_loss_epoch:>7f} -- KL = {kl_loss_epoch:>7f}", flush = True)
 
     return tot_loss_epoch, mse_loss_epoch, kl_loss_epoch
 
