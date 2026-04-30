@@ -52,7 +52,7 @@ def _get_label_column_expr(classifier_type):
         expression = (pl.when(pl.col("SPECTYPE_desi") == "STAR").then(0)
                         .when(pl.col("SPECTYPE_desi") == "GALAXY").then(1)
                         .when(pl.col("SPECTYPE_desi") == "QSO").then(2)
-                        .otherwise(3).alias("label"))
+                        .otherwise(-1).alias("label"))
     else:
         raise ValueError("Wrong classifier specified")
     

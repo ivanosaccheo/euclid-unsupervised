@@ -30,6 +30,11 @@ __pycache__/
 *.pth
 *.ckpt
 
+#Plot
+*.png
+*.pdf 
+
+
 # OS
 .DS_Store
 
