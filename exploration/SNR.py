@@ -48,7 +48,7 @@ df = df.with_columns([pl.col(err).map_batches(au.get_SNR, is_elementwise=True, r
 
 ncols = 3
 nrows = int(np.ceil(len(mag_cols)/ncols))
-fig, ax = plt.subplots(nrows = nrows, ncols = ncols, figsize = (10,10), 
+fig, ax = plt.subplots(nrows = nrows, ncols = ncols, figsize = (14,10), 
                        gridspec_kw = {"wspace": 0.05, "hspace":0.05}, sharex=True)
 for i, mag_col in enumerate(lu._sort_flux_columns_by_wavelength(mag_cols)):
     snr_col = "snr_" +  mag_col
