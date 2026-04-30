@@ -57,8 +57,8 @@ data = scaler.transform(data)
 train_data, validation_data = train_test_split(data, test_size = 0.3, random_state=config["SPLIT_SEED"])
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-train_dataset = TensorDataset(torch.from_numpy(train_data))
-validation_dataset = TensorDataset(torch.from_numpy(validation_data))
+train_dataset = TensorDataset(torch.from_numpy(train_data.astype("float32")))
+validation_dataset = TensorDataset(torch.from_numpy(validation_data.astype("float32")))
 train_dataloader = DataLoader(train_dataset, batch_size= config["BATCH_SIZE"], shuffle = True, pin_memory=True)
 validation_dataloader = DataLoader(validation_dataset, batch_size = config["BATCH_SIZE"], pin_memory = True)
 
