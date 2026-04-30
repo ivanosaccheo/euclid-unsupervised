@@ -23,9 +23,9 @@ def plot_snr(ax, mag, snr,
         x = mag.filter(mask)
         y = snr.filter(mask)
     
-    ax.hexbin(x, y, **kwargs)
+    hb =ax.hexbin(x, y, **kwargs)
     ax.annotate(name, (0.1, 0.85), xycoords = "axes fraction")
-
+    return hb
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -54,10 +54,11 @@ for i, mag_col in enumerate(lu._sort_flux_columns_by_wavelength(mag_cols)):
     snr_col = "snr_" +  mag_col
     row = i//ncols
     col = i % ncols
-    plot_snr(ax[row, col], df[mag_col], df[snr_col], 
+    hb = plot_snr(ax[row, col], df[mag_col], df[snr_col], 
              name = mag_col.split("_total_")[0],
              snr_min = 0,
-        gridsize=300, mincnt =2, cmap = "jet", norm = LogNorm(vmin = 1, vmax = 1000))
+             mag_max =30,
+        gridsize=300, mincnt =2, cmap = "jet", norm = LogNorm(vmin = 1, vmax = 10000))
     ax[row, col].set_ylim(0,10)
     if col !=0:
         ax[row,col].set_yticklabels([])
@@ -68,7 +69,8 @@ for j in range(i + 1, nrows * ncols):
 fig.supylabel("SNR")
 fig.supxlabel("AB mag")
 fig.subplots_adjust(left=0.08, bottom=0.08)
-
+cbar = fig.colorbar(hb, ax=ax, location="right", pad=0.02)
+cbar.set_label("Log counts")
 plt.savefig(os.path.join(save_directory_plot, "SNR_mag.png"), bbox_inches = "tight")
 
 
