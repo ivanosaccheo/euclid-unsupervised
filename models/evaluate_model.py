@@ -39,7 +39,7 @@ train_data  = train_df.select(features_to_use)
 validation_data  = validation_df.select(features_to_use)
 
 validation_label = validation_df.select(pl.col("SPECTYPE_desi")).with_columns(lu._get_label_column_expr("multilabel"))
-validation_label = validation_label.select("label").to_numpy()
+validation_label = validation_label.select("label").to_numpy().ravel()
 
 train_data, validation_data = preprocessing.scale_data(train_data, validation_data)
 
@@ -64,11 +64,11 @@ with torch.no_grad():
         log_var_list.append(log_var.to("cpu"))
 
 mu = torch.cat(mu_list, dim =0).numpy()
-log_var = torch.cat(log_var = torch.cat(log_var_list, dim=0).numpy())
+log_var = torch.cat(log_var_list, dim=0).numpy()
 
 
 save_directory_plot = os.path.join(base_dir, "plot")
-os.makedirs(save_directory, exist_ok=True)
+os.makedirs(save_directory_plot, exist_ok=True)
 plot_name = f"latent_{model_filename}.png"
 fig = plot_library.plot_latent_space(mu, labels = validation_label)
 fig.savefig(os.path.join(save_directory_plot, plot_name))
