@@ -85,3 +85,28 @@ def split_train_test(df,
     
     return train_df, test_df
 
+
+
+def clean_data(df, config, verbose = True):
+    snr_min = config.get("SNR_min", None)
+    if snr_min is not None:
+        len_in = df.height
+        err_mag_columns = [c for c in df.columns if "magerr_" in c]
+        df = filter_low_SNR(df, err_mag_columns, snr_min = snr_min)
+        if verbose:
+            print(f"Keeping {df.height} sources with SNR >= {snr_min}")
+            print(f"Removed {len_in - df.height} sources with SNR < {snr_min}")
+            print("-----")
+    columns_required = config.get(columns_required, df.columns)
+    len_in = df.height
+    df = replace_infs(df, columns_required)
+    if config.get("FILL_NAN_VALUES", False):
+        df = fill_nans(df, columns_required)
+    else:
+        df = drop_nans(df, columns_required)
+        if verbose:
+            print(f"Keeping {df.height} sources without NaN values")
+            print(f"Removed {len_in - df.height} sources with NaN values")
+            print("-----")
+
+    return df
