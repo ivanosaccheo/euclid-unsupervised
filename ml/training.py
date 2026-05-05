@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 
-def train_routine(dataloader, model, loss_fn, optimizer, beta = 1, 
+def VAE_train_routine(dataloader, model, loss_fn, optimizer, beta = 1, 
                   device = "cpu",
                   verbose = True):
     
@@ -36,7 +36,7 @@ def train_routine(dataloader, model, loss_fn, optimizer, beta = 1,
 
 
 
-def validation_routine(dataloader, model, loss_fn, beta=1, 
+def VAE_validation_routine(dataloader, model, loss_fn, beta=1, 
                        device = "cpu",
                        verbose=True):
     model.eval()
@@ -110,3 +110,55 @@ def get_beta(epoch, Nepochs, splits = [0.33, 0.55], floor_val =0.0, ceil_val =1.
         dy = ceil_val-floor_val
         dx = e1-e0
         return dy/dx*(epoch-e0)
+    
+
+def SCARF_train_routine(dataloader,  model, 
+                       optimizer,
+                       loss_fn,
+                       device = "cpu",
+                       verbose=True):
+    model.train()
+    epoch_loss = 0.0
+    num_batches = len(dataloader)
+    for data in dataloader:
+        data = data.to(device)
+        emb_anchor, emb_positive = model(data)
+        loss = loss_fn(emb_anchor, emb_positive)
+        
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        epoch_loss += loss.item()
+    epoch_loss = epoch_loss/num_batches
+    if verbose:
+        print(f"Train: tot_loss = {epoch_loss:>7f}", flush = True)
+
+    return epoch_loss
+
+
+def SCARF_validation_routine(dataloader, model, 
+                             loss_fn,
+                             device = "cpu",
+                             verbose = True,
+                             ):
+    
+    model.eval()
+    epoch_loss = 0.0 
+    num_batches = len(dataloader)
+    with torch.no_grad():
+        for data in dataloader:
+            data = data.to(device)
+            emb_anchor, emb_positive = model(data)
+            loss = loss_fn(emb_anchor, emb_positive)
+            epoch_loss += loss.item()
+    epoch_loss = epoch_loss/num_batches
+    if verbose:
+        print(f"Validation: tot_loss = {epoch_loss:>7f}", flush = True)
+    return epoch_loss
+        
+
+
+  
+
+

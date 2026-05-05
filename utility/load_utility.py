@@ -182,9 +182,10 @@ def load_data(
                          (pl.col("det_quality_flag_euclid") == 0)),
     extra_columns = ("object_id_euclid",),
     morphology_columns = ("mumax_minus_mag_euclid",),
+    debug = False,
     ):
-                          
-    lf = pl.scan_parquet(os.path.join(file_path, "*.parquet"))
+    filename = "catalogue_tile102157951_final.parquet" if debug else "*.parquet"
+    lf = pl.scan_parquet(os.path.join(file_path, filename))
     schema = lf.collect_schema()
     mag_names = []
     color_names = []

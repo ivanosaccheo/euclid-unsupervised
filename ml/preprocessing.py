@@ -97,7 +97,7 @@ def clean_data(df, config, verbose = True):
             print(f"Keeping {df.height} sources with SNR >= {snr_min}")
             print(f"Removed {len_in - df.height} sources with SNR < {snr_min}")
             print("-----")
-    columns_required = config.get(columns_required, df.columns)
+    columns_required = config.get("features_to_use", df.columns)
     len_in = df.height
     df = replace_infs(df, columns_required)
     if config.get("FILL_NAN_VALUES", False):
