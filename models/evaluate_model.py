@@ -73,7 +73,6 @@ plot_name = f"latent_{model_filename}.png"
 fig = plot_library.plot_latent_space(mu, labels = validation_label)
 fig.savefig(os.path.join(save_directory_plot, plot_name))
 
-
 save_directory_output = os.path.join(base_dir, "output")
 os.makedirs(save_directory_output, exist_ok=True)
 
@@ -86,3 +85,4 @@ latent_dict["label"] = validation_label
 latent_df = pl.DataFrame(latent_dict)
 df_name = f"latent_{model_filename}.parquet"
 latent_df.write_parquet(os.path.join(save_directory_output, df_name))
+
