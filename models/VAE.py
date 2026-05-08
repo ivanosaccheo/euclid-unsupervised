@@ -83,7 +83,7 @@ for epoch in range(config["NEPOCHS"]):
                                                                 beta = beta,                                                          
                                                                 device = device,
                                                                 verbose = (epoch%10==0))
-    history.append(training.update_history(epoch, train_losses, val_losses, beta = beta))
+    history.append(training.update_history_VAE(epoch, train_losses, val_losses, beta = beta))
 
 
 torch.save(model.state_dict(), os.path.join(save_directory, filename + ".pt"))

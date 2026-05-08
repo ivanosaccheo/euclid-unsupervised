@@ -24,6 +24,29 @@ def _get_errors_magnitudes_expression(flux_columns, error_columns, prefix = "mag
                   for (f, err, m) in zip(flux_columns, error_columns, error_names)]
     return expression, error_names
 
+def _get_ebv_correction_expression(ebv_corrected_columns, non_ebv_corrected_columns, prefix = "delta_mag_ebv"):
+    names = get_ebv_delta_mag_names(ebv_corrected_columns, prefix = prefix)
+    expression = [(-2.5*(pl.col(non_corrected)/pl.col(corrected)).log10()).alias(name)
+                  for (corrected, non_corrected, name) in zip(ebv_corrected_columns, non_ebv_corrected_columns, names)]
+    return expression
+
+def _get_ebv_color_correction_expression(color_pairs, colors_names):
+    #Requires magnitude correction to be already computed
+    #Color corrected = Color - (delta_mag1 -delta_mag2)
+    columns_1 = get_ebv_delta_mag_names([i[0] for i in color_pairs])
+    columns_2 = get_ebv_delta_mag_names([i[1] for i in color_pairs])
+    ebv_correction_expr = ([((pl.col(name) - (pl.col(col_1)-pl.col(col_2))).alias(name)) 
+                           for (name, col_1, col_2) in zip(colors_names, columns_1, columns_2)])
+    return ebv_correction_expr
+
+def get_ebv_delta_mag_names(flux_columns, prefix = "delta_mag_ebv"):
+    names = [_replace_flux_prefix(col, prefix) for col in flux_columns]
+    names = [name.split("_total_")[0] if '_total_' in name else name for name in names]
+    names = [name.split('fwhm_')[0][:-2] if 'fwhm_' in name else name for name in names] 
+    names = [name.replace("_ext_", "_") for name in names]
+    names = [name.replace("_detection", "_vis") if name.endswith("_detection") else name for name in names]
+    return names
+
 def _replace_flux_prefix(name, prefix):
     if not name.startswith("flux_"):
         raise ValueError(f"Unexpected column name: {name}")
@@ -71,6 +94,15 @@ def get_color_pairs(flux_columns1, flux_columns2=None, band_order=BAND_ORDER):
         for f1, f2 in zip(flux_columns1, flux_columns2)
     ]
 
+def get_ebv_magnitude_correction(lf):
+    """For a given band returns the EBV correction in magnitudes"""
+    schema = lf.collect_schema()
+    ebv_corrected_columns = get_templatefit_flux_columns(schema, ebv_corrected=True)
+    non_ebv_corrected_columns = [col.replace("_ebv_","_") for col in ebv_corrected_columns]
+    expression = _get_ebv_correction_expression(ebv_corrected_columns, non_ebv_corrected_columns)
+    return lf.with_columns(expression)
+
+
 def get_magnitudes(df, flux_columns, 
                    error_columns = None, 
                    prefix = "mag", 
@@ -88,8 +120,10 @@ def get_magnitudes(df, flux_columns,
         return df.with_columns(expression), names
     return df.with_columns(expression)
 
-def get_colors(df, flux_columns1, flux_columns2 = None, return_names = True,
+def get_colors(df, flux_columns1, flux_columns2 = None, 
+               return_names = True,
                prefix = "", 
+               apply_ebv_correction = True,
                band_order = BAND_ORDER):
     
     pairs = get_color_pairs(flux_columns1,flux_columns2=flux_columns2,
@@ -99,9 +133,15 @@ def get_colors(df, flux_columns1, flux_columns2 = None, return_names = True,
     expressions = [(-2.5 * (pl.col(f1) / pl.col(f2)).log10()).alias(name)
             for (f1, f2), name in zip(pairs, names)]
     
+    df = df.with_columns(expressions)
+    
+    if apply_ebv_correction:
+        ebv_expressions = _get_ebv_color_correction_expression(pairs, names)
+        df = df.with_columns(ebv_expressions)
     if return_names:
-        return df.with_columns(expressions), names
-    return df.with_columns(expressions)
+        return df, names
+    return df
+
 
 
 def get_magnitudes_names(flux_columns, prefix="mag"):
@@ -125,39 +165,46 @@ def get_error_columns(schema):
     return [name for name in schema.keys() if "err_" in name]
 
 
-def get_templatefit_flux_columns(schema, ebv_corrected=True):
+def get_templatefit_flux_columns(schema, ebv_corrected=True, add_vis = True):
     cols = []
 
     for name in schema.names():
         if (
             "flux_" in name
             and "_euclid" in name
-            and "_templfit" in name
-            and "_total" in name
+            and "_templfit_" in name
+            and "_total_" in name
         ):
             if ebv_corrected and "_ebv_" in name:
                 cols.append(name)
             elif not ebv_corrected and "_ebv_" not in name:
                 cols.append(name)
-
+    
+    if add_vis:
+        name = "flux_detection_total_euclid" if not ebv_corrected else "flux_detection_total_ebv_euclid"
+        if name in schema.names():
+            cols.append(name)
     return cols
 
 
-def get_fwhm_flux_columns(schema, fwhm_values=None):
+def get_fwhm_flux_columns(schema, fwhm_values=None,
+                          excluded_cols = ("_g_ext_jpcam", "_u_ext_decam", "z_ext_panstarrs")):
     cols = []
 
     for name in schema.names():
         if (
             "flux_" in name
             and "_euclid" in name
-            and "_total" not in name
+            and "_total_" not in name
+            and "_nir_stack_" not in name
+            and all(excluded not in name for excluded in excluded_cols)
         ):
             if fwhm_values is None:
-                if "fwhm" in name:
+                if "fwhm_aper_" in name:
                     cols.append(name)
             else:
                 for f in fwhm_values:
-                    if f"{f}fwhm" in name:
+                    if f"{f}fwhm_aper_" in name:
                         cols.append(name)
                         break
     return cols
@@ -182,6 +229,7 @@ def load_data(
                          (pl.col("det_quality_flag_euclid") == 0)),
     extra_columns = ("object_id_euclid",),
     morphology_columns = ("mumax_minus_mag_euclid",),
+    apply_ebv_correction = True,
     debug = False,
     ):
     filename = "catalogue_tile102157951_final.parquet" if debug else "*.parquet"
@@ -197,10 +245,12 @@ def load_data(
         if add_errors:
             error_columns = get_fluxerror_columns(schema, flux_columns)
         lf, mag_names = get_magnitudes(lf, flux_columns, error_columns=error_columns)
+    if apply_ebv_correction:
+        lf = get_ebv_magnitude_correction(lf)
     if add_colors:
         for fwhm in fwhm_values:
             fwhm_flux_columns = get_fwhm_flux_columns(schema,fwhm_values=[fwhm])
-            lf, names = get_colors(lf, fwhm_flux_columns)
+            lf, names = get_colors(lf, fwhm_flux_columns, apply_ebv_correction=apply_ebv_correction)
             color_names.extend(names)
     morphology_columns = list(morphology_columns or [])
     extra_columns = list(extra_columns or [])

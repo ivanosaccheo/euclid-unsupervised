@@ -8,3 +8,6 @@ def fluxes_to_color(flux1, flux2):
 
 def get_SNR(err_mag):
     return (2.5/np.log(10))/err_mag
+
+def err_flux_to_err_mag(err, flux):
+    return  ((2.5/np.log(10))/flux)*err

@@ -1,3 +1,4 @@
+import os
 import numpy as np 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -104,7 +105,21 @@ def plot_latent_space(
     )
 
     return fig
-    return fig
+
+def plot_training(train_loss, val_loss, filename, directory=None, **kwargs):
+    if filename is not None:
+        filename = os.path.join(directory, filename)
+
+    fig, ax = plt.subplots()
+    ax.plot(train_loss, label = "train")
+    ax.plot(val_loss, label = "validation", **kwargs)
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("Loss")
+    ax.legend()
+    plt.savefig(filename, bbox_inches="tight")
+    plt.close(fig)
+
+
 
 
 
